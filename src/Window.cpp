@@ -6,8 +6,13 @@
 
 
 Window::Window(char const* title, SDL_Rect size) {
-    screen.h = size.h;
-    screen.w = size.w;
+    h = size.h;
+    w = size.w;
+    
+    screen.x = 0;
+    screen.y = 0;
+    screen.w = w;
+    screen.h = h;
     window = NULL;
     renderer = NULL;
 
@@ -44,3 +49,10 @@ Window const& Window::operator=(Window const& other) {
     return *this;
 }
 
+
+void Window::modifyScale(float const factor) {
+    screen.x += screen.w * 0.5f * (1.0f - factor);
+    screen.y += screen.h * 0.5f * (1.0f - factor);
+    screen.w *= factor;
+    screen.h *= factor;
+}

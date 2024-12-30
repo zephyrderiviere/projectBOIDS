@@ -20,8 +20,11 @@ class Window {
         
         SDL_Window* window;
         SDL_Rect screen;
+        int w, h;
     
         SDL_Renderer* renderer;
+
+        void modifyScale(float const factor);
 
         Window () : window(NULL), renderer(NULL) {}        
         Window(char const* title, SDL_Rect size);

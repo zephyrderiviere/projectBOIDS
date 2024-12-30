@@ -1,5 +1,5 @@
-C_FLAGS := -I/usr/include/SDL2 -D_REENTRANT
-LIBS := -lSDL2
+C_FLAGS := -I/usr/include/SDL2 -D_REENTRANT -Ofast
+LIBS := -lSDL2 -lSDL2_ttf
 SRC_FILES := src/*.cpp src/utils/*.cpp src/objects/*.cpp
 
 
