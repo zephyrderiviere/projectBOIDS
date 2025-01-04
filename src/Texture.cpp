@@ -5,6 +5,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <algorithm>
+#include <cmath>
 #include "utils/ErrorHandling.hpp"
 #include "utils/Position.hpp"
 
@@ -23,6 +24,7 @@ Texture::Texture(SDL_Renderer* renderer, char const* filepath, int const x, int 
     dimensions.w = surface->w;
 
     texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
 
     if (texture == NULL) {
         throw exception(CONVERTING_SURFACE_TO_TEXTURE_ERROR);
@@ -65,7 +67,15 @@ void Texture::render(Position<float> p, float objectScale, float scale_w, float 
 
 void Texture::render(Position<float> p, Position<float> orientation, float objectScale, float scale_w, float scale_h) const {
     SDL_FRect r = {p.i, p.j, objectScale * scale_w * dimensions.w, objectScale * scale_h * dimensions.h};
-    double angle = 180.0 / M_PI * acos(std::clamp(orientation * ux, -1.0f, 1.0f));
+    float angle;
+    if (orientation.norm() < 1e-4f) {
+        angle = 0.0f;
+    } else if (orientation.j < 0) {
+        // 180 < angle < 360
+        angle += 180.0f * (1.0f + 1.0f / M_PIf * std::acos(std::clamp(orientation * (-ux), -1.0f, 1.0f)));
+    } else {
+        angle = (180.0f / M_PIf) * std::acos(std::clamp(orientation * ux, -1.0f, 1.0f));
+    }
     if (SDL_RenderCopyExF(renderer, texture, NULL, &r, angle, NULL, SDL_FLIP_NONE) != 0) {
         throw exception(TEXTURE_RENDER_ERROR);
     }
@@ -83,6 +93,7 @@ Text::Text(SDL_Renderer* renderer, char const* text, TTF_Font* font, SDL_Color c
     dimensions.w = surface->w;
 
     texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
 
     if (texture == NULL) {
         throw exception(CONVERTING_SURFACE_TO_TEXTURE_ERROR);
@@ -112,6 +123,7 @@ Text::Text(SDL_Renderer* renderer, char const* text, char const* font_filepath, 
     dimensions.w = surface->w;
 
     texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
 
 
     if (texture == NULL) {

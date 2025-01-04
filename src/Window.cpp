@@ -1,5 +1,6 @@
 #include "Window.hpp"
 #include "utils/ErrorHandling.hpp"
+#include "utils/Position.hpp"
 #include <SDL2/SDL_render.h>
 
 
@@ -51,8 +52,31 @@ Window const& Window::operator=(Window const& other) {
 
 
 void Window::modifyScale(float const factor) {
+    if ((float) screen.w / w < 0.2f && factor < 1.0f) return;
+    if ((float) screen.w / w > 5.0f && factor > 1.0f) return; 
     screen.x += screen.w * 0.5f * (1.0f - factor);
     screen.y += screen.h * 0.5f * (1.0f - factor);
     screen.w *= factor;
     screen.h *= factor;
+}
+
+Position<int> Window::toPixel(Position<float> const& p) const {
+    Position<int> pixel;
+    pixel.i = ((float) w / screen.w) * (p.i - screen.x);
+    pixel.j = ((float) h / screen.h) * (p.j - screen.y);
+    return pixel;
+}
+
+Position<float> Window::toScreenCoords(Position<float> const& p) const {
+    Position<float> pixel;
+    pixel.i = ((float) w / screen.w) * (p.i - screen.x);
+    pixel.j = ((float) h / screen.h) * (p.j - screen.y);
+    return pixel;
+}
+
+Position<float> Window::toPlaneCoords(Position<int> const& pixel) const {
+    Position<float> p;
+    p.i = screen.x + pixel.i * (float) screen.w / w;
+    p.j = screen.y + pixel.j * (float) screen.h / h;
+    return p;
 }

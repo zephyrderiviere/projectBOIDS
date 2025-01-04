@@ -36,6 +36,13 @@ struct Position {
         return inBounds(i, i_min, i_max) && inBounds(j, j_min, j_max);
     }
 
+    inline Position operator+() const {
+        return *this;
+    }
+    inline Position operator-() const {
+        return Position(-i, -j);
+    }
+
     inline Position operator+(Position const& other) const {
         return Position(i + other.i, j+other.j);
     }
@@ -63,6 +70,7 @@ struct Position {
     }
 
     inline Position<T> operator/(T a) const {
+        if (a == 0) return *this;
         return Position(i / a, j / a);
     }
 

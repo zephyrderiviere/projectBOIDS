@@ -22,8 +22,10 @@ static char* getMessageFromErrorCode(ErrorCode error) {
 
         case PIXEL_RENDER_ERROR : return (char*)"Error during rendering of a pixel";
         case LINE_RENDER_ERROR : return (char*)"Error during rendering of a line";
-        case RECTANGLE_RENDER_ERROR : return (char*)"Error during rendering of a rectangle";
-        case TEXTURE_RENDER_ERROR : return (char*)"Error during rendering of a texture";
+        case RECTANGLE_RENDER_ERROR : return (char*)"Error during rendering of a Rectangle";
+        case CIRCLE_RENDER_ERROR : return (char*)"Error during rendering of a Circle";
+        case TEXTURE_RENDER_ERROR : return (char*)"Error during rendering of a Texture";
+        case BBOX_RENDER_ERROR : return (char*)"Error during rendering of a BBox";
 
         default: return (char*)"Error";
     }

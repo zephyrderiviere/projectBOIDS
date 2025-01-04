@@ -19,14 +19,19 @@
 /***********************WINDOW COLOURS***********************/
 
 
-static const SDL_Color blueButton = {100, 100, 255, 255};
 static const SDL_Color white = {255, 255, 255, 255};
 static const SDL_Color black = {0, 0, 0, 255};
+static const SDL_Color red = {255, 0, 0, 255};
+static const SDL_Color green = {0, 255, 0, 255};
+static const SDL_Color blue = {0, 0, 255, 255};
 static const SDL_Color darkGrey = {100, 100, 100, 255};
+static const SDL_Color darkGreen = {0, 100, 0, 255};
 static const SDL_Color beige = {227,212,173, 255};
 static const SDL_Color blueviolet = {138, 43, 226, 255};
 static const SDL_Color magenta = {255, 0, 255, 255};
-static const SDL_Color green = {0, 255, 0, 255};
+static const SDL_Color turquoise = {64, 224, 208, 255};
+static const SDL_Color blueButton = {100, 100, 255, 255};
+static const SDL_Color skyBlue = {70, 142, 228, 255};
 
 
 inline void SetColor(SDL_Renderer* renderer, SDL_Color color) {

@@ -2,6 +2,7 @@
 #define WINDOW
 
 
+#include "utils/Position.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_video.h>
@@ -36,6 +37,10 @@ class Window {
         inline void setDrawColor(SDL_Color const& c) const {
             SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
         }
+
+        Position<int> toPixel(Position<float> const& p) const;
+        Position<float> toScreenCoords(Position<float> const& p) const;
+        Position<float> toPlaneCoords(Position<int> const& pixel) const;
 
 };
 

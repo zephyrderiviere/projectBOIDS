@@ -46,6 +46,8 @@ class Text : public Texture {
 
         Text(SDL_Renderer* renderer, char const* text, TTF_Font* font, SDL_Color const& color, int const x = 0, int const y = 0);
         Text(SDL_Renderer* renderer, char const* text, char const* font_filepath, unsigned size, SDL_Color const& color, int const x = 0, int const y = 0);
+
+        ~Text() = default;
 };
 
 
