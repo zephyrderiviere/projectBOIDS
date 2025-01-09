@@ -5,6 +5,7 @@
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
+#include "../World.hpp"
 #include "../utils/colors.hpp"
 #include "../Texture.hpp"
 
@@ -15,11 +16,12 @@ class Object {
     
     public:
         SDL_FRect bbox;
+        std::pair<int, int> chunk;
 
-        Object(SDL_Renderer* renderer) : renderer(renderer), bbox({0, 0, 0, 0}), scale(1.0f) {}
-        Object(SDL_Renderer* renderer, Position<float> c, float scale = 1) : renderer(renderer), bbox({c.i, c.j, 0, 0}), scale(scale) {}
-        Object(SDL_Renderer* renderer, float x, float y, float w, float h, float scale = 1) : renderer(renderer), bbox({x, y, scale * w, scale * h}), scale(scale) {}
-        Object(SDL_Renderer* renderer, SDL_FRect const& r, float scale = 1) : renderer(renderer), bbox({r.x, r.y, scale * r.w, scale * r.h}), scale(scale) {}
+        Object(SDL_Renderer* renderer) : renderer(renderer), bbox({0, 0, 0, 0}), scale(1.0f), chunk(0, 0) {}
+        Object(SDL_Renderer* renderer, Position<float> c, float scale = 1) : renderer(renderer), bbox({c.i, c.j, 0, 0}), chunk(c.i / CHUNK_SIZE, c.j / CHUNK_SIZE), scale(scale) {}
+        Object(SDL_Renderer* renderer, float x, float y, float w, float h, float scale = 1) : renderer(renderer), bbox({x, y, scale * w, scale * h}), chunk(x / CHUNK_SIZE, y / CHUNK_SIZE), scale(scale) {}
+        Object(SDL_Renderer* renderer, SDL_FRect const& r, float scale = 1) : renderer(renderer), bbox({r.x, r.y, scale * r.w, scale * r.h}), chunk(r.x / CHUNK_SIZE, r.y / CHUNK_SIZE), scale(scale) {}
 
         inline Position<float> getCenter() const {
             return Position<float>(bbox.x + bbox.w / 2.0f, bbox.y + bbox.h / 2.0f);

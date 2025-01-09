@@ -1,6 +1,9 @@
 #include "Boid.hpp"
 #include "../utils/ErrorHandling.hpp"
 #include "Objects.hpp"
+#include <SDL2/SDL_rect.h>
+#include <SDL2/SDL_render.h>
+#include <algorithm>
 #include <vector>
 
 
@@ -56,6 +59,11 @@ void Boid::renderAccelerations(Position<float> const offset, float scale_w, floa
     if (SDL_RenderDrawLineF(renderer, center.i, center.j, center.i + alignment.i, center.j + alignment.j) != 0) {
         throw exception(LINE_RENDER_ERROR);
     }  
+
+    SetColor(renderer, orange);
+    if (SDL_RenderDrawLineF(renderer, center.i, center.j, center.i + speed.i, center.j + speed.j) != 0) {
+        throw exception(LINE_RENDER_ERROR);
+    }
 }
 
 std::vector<std::pair<Object*, float>> Boid::findCloseObstacles(std::vector<Object*> const& stationaryObjects, float const limit) {
@@ -82,12 +90,50 @@ std::vector<Boid*> Boid::findCloseBoids(std::vector<Boid*> const& boids, float c
 }
 
 void Boid::updatePosition(float const dt) {
-    Position<float> updated = Position<float>(bbox.x, bbox.y) + dt * speed;
-    bbox.x = updated.i; bbox.y = updated.j;
+    bbox.x += dt * speed.i; 
+    bbox.y += dt * speed.j;
+}
+
+
+bool Boid::straightLineIntersect(SDL_FRect const& rect) const {
+    if (std::abs(speed.i) >= 1e-6) {
+        //We check for intersection with vertical sides
+
+        float t = (rect.x - getCenter().i) / speed.i;
+        float y = (getCenter() + speed * t).j;
+        if (rect.y < y && y < rect.y + rect.h) return true;
+        
+        t = (rect.x + rect.w - getCenter().i) / speed.i;
+        y = (getCenter() + speed * t).j;
+
+        if (rect.y < y && y < rect.y + rect.h) return true;
+    }
+    if (std::abs(speed.j) >= 1e-6) {
+        //We check for intersection with horizontal sides
+        
+        float t = (rect.y - getCenter().j) / speed.j;
+        float x = (getCenter() + speed * t).i;
+        if (rect.x < x && x < rect.x + rect.w) return true;
+
+        t = (rect.y + rect.h - getCenter().j) / speed.j;
+        x = (getCenter() + speed * t).i;
+        if (rect.x < x && x < rect.x + rect.w) return true;
+    }
+
+    return false;
+}
+
+
+void Boid::updateRotation(std::vector<std::pair<Object*, float>> const& closeObstacles, WorldSettings const& world) {
+    for(std::pair o : closeObstacles) {
+        if(straightLineIntersect(o.first->bbox)) {
+            speed.rotate(rotationDirection * world.rotSpeed);
+            return;
+        }
+    }
 }
         
-void Boid::updateSpeed(Position<float> const& meanPos, Position<float> const& meanSpeed, std::vector<Boid*> const& closeBoids, std::vector<std::pair<Object*, float>> const& closeObstacles, WorldSettings const& world) {
-    Position<float> acceleration = - world.alpha * speed;
+void Boid::calculateForces(std::vector<Boid*> const& closeBoids, std::vector<std::pair<Object*, float>> const& closeObstacles, WorldSettings const& world) {
 
     Position<float> boid = getCenter();
 
@@ -97,23 +143,30 @@ void Boid::updateSpeed(Position<float> const& meanPos, Position<float> const& me
 
 
     if (!closeBoids.empty()) {
-        Position<float> separationBoids;
+        unsigned verycloseBoids = 0;
         for(Boid* b : closeBoids) {
-            separationBoids += (boid - b->getCenter());
+            if ((boid - b->getCenter()).norm() < world.closeBoidsSeparationLimit) {
+                separation += (boid - b->getCenter());
+                verycloseBoids++;
+            }
+            cohesion += (b->getCenter() - boid);
+            alignment += b->getSpeed();
         }
-        separation = (separationBoids / closeBoids.size());
+        cohesion /= closeBoids.size();
+        alignment /= closeBoids.size();
+        if (verycloseBoids > 0) separation /= verycloseBoids;
     }
 
     if (!closeObstacles.empty()) {
         Position<float> separationObstacles;
         for(std::pair o : closeObstacles) {
-            separationObstacles += (o.first->getCenter()) / (std::pow(o.second, 2) / world.closeLimit);
+            if (o.second < world.closeObstaclesLimit / 2) {
+                separationObstacles += (boid - o.first->getCenter()) / (std::pow(o.second, 2) / (world.closeObstaclesLimit / 2));
+            }
         }
-        separation += (boid - separationObstacles / closeObstacles.size());
+        separation += (separationObstacles / closeObstacles.size());
     }
 
-    cohesion = (meanPos - boid);
-    alignment = meanSpeed;
         
 
     if (cohesion.norm() < 1e-3f) {
@@ -125,16 +178,36 @@ void Boid::updateSpeed(Position<float> const& meanPos, Position<float> const& me
     if (alignment.norm() < 1e-3f) {
         alignment = Position<float>(0, 0);
     }
+}
 
-
-    acceleration += (cohesion + separation + alignment);
-
-    speed += world.dt * acceleration;
-
-
-    // SPEED LIMIT
+void Boid::limitSpeed(WorldSettings const& world) {
     float const norm = speed.norm();
     if (norm > world.maxSpeed) {
         speed *= (world.maxSpeed / norm);
     }
+}
+
+void Boid::updateSpeed(std::vector<Boid*> const& closeBoids, std::vector<std::pair<Object*, float>> const& closeObstacles, WorldSettings const& world) {
+    calculateForces(closeBoids, closeObstacles, world);
+    separation *= 2.0f;
+    Position<float> acceleration = - world.alpha * speed + (cohesion + separation + alignment);
+
+    speed += world.dt * acceleration;
+
+    limitSpeed(world);
+}
+
+
+
+void LoneBoid::updateSpeed(std::vector<Boid*> const& closeBoids, std::vector<std::pair<Object*, float>> const& closeObstacles, WorldSettings const& world) {
+    calculateForces(closeBoids, closeObstacles, world);
+    cohesion *= cohesionFactor;
+    separation *= separationFactor;
+    alignment *= alignmentFactor;
+
+    Position<float> acceleration = - world.alpha * speed + (cohesion + separation + alignment);
+
+    speed += world.dt * acceleration;
+
+    limitSpeed(world);
 }

@@ -1,13 +1,16 @@
 #include "global.hpp"
 #include "Texture.hpp"
+#include "World.hpp"
 #include "objects/Objects.hpp"
 #include "utils/Position.hpp"
 #include "utils/colors.hpp"
+#include "utils/random.hpp"
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_scancode.h>
 #include <SDL2/SDL_ttf.h>
 #include <cstdlib>
 #include <ctime>
-#include <vector>
+#include <queue>
 
 
 void global::loadTextures() {
@@ -15,7 +18,22 @@ void global::loadTextures() {
     textures.push_back(std::pair("cloud1", new Texture(window.renderer, file_cloud1)));
 
     /*Boid texture Atlas TODO*/
-    textures.push_back(std::pair("boids", new Texture(window.renderer, file_WhiteBoid)));
+    textures.push_back(std::pair("boids", new Atlas(window.renderer, file_WhiteBoid, 1, 1)));
+}
+
+
+void global::makeWorldBorder(float const size) {
+    for(int x=-size; x<=size; x += 10) {
+        if (std::abs(x) == size) {
+            for(int y=-size; y<size; y+=10) {
+                stationaryObjects.push_back(new Rectangle(window.renderer, {(float) x, (float) y, 1, 10}, blueviolet));
+            }
+        }
+        if (x != size) {
+            stationaryObjects.push_back(new Rectangle(window.renderer, {(float) x, -size, 10, 1}, blueviolet));
+            stationaryObjects.push_back(new Rectangle(window.renderer, {(float) x, +size, 10, 1}, blueviolet));
+        }
+    }
 }
 
 Texture* global::findTexture(std::string const& name) {
@@ -39,6 +57,54 @@ global::~global() {
 
     TTF_CloseFont(debugFont);
     SDL_Quit();
+}
+
+bool global::notInNeighbourHood(Position<float> const& point, std::list<Position<float>> const& samplePoints, unsigned const cellSize) const {
+    for (Position<float> p : samplePoints) {
+        if ((p - point).norm() < world.chunkGen_MinDist || ((p.i / cellSize) == (point.i / cellSize)) && ((p.j / cellSize) == (point.j / cellSize))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+//Generates a chunk (by default a 1000x1000 zone) using the Poisson Disk Sampling method
+void global::generateChunk(std::pair<int, int> const& chunk) {   
+    unsigned const cellSize = CHUNK_SIZE / 10;
+    std::queue<Position<float>> toProcess;
+    std::list<Position<float>> samplePoints;
+    Position<float> p (CHUNK_SIZE * chunk.first + rand() % CHUNK_SIZE, CHUNK_SIZE * chunk.second + rand() % CHUNK_SIZE);
+    toProcess.push(p); samplePoints.push_back(p);
+
+    while(!toProcess.empty()) {
+        Position<float> point = toProcess.front();
+        toProcess.pop();
+        for(int i=0; i<world.chunkGen_NewPoints; i++) {
+            Position<float> rand = point + randomDiskSampling(world.chunkGen_MinDist, 2.0f * world.chunkGen_MinDist);
+
+            if (rand.inRectangle(CHUNK_SIZE * chunk.first, CHUNK_SIZE * (chunk.first + 1), CHUNK_SIZE * chunk.second, CHUNK_SIZE * (chunk.second + 1))
+                && notInNeighbourHood(rand, samplePoints, cellSize)) {
+
+                toProcess.push(rand);
+                samplePoints.push_back(rand);
+            }
+        }
+    }
+
+    for(Position<float>& p : samplePoints) {
+        stationaryObjects.push_back(new Obstacle(window.renderer, p, findTexture("cloud1"), randomFloat(0, 360.0f), 0.1f));
+    }
+}
+
+void global::unloadChunk(std::pair<int, int> const& chunk) {
+    for(auto iter = stationaryObjects.begin(); iter != stationaryObjects.end(); iter++) {
+        Object* o = *(iter.base());
+        if (o->chunk == chunk) {
+            delete o;
+            stationaryObjects.erase(iter);
+            iter--;
+        }
+    }
 }
 
 
@@ -67,8 +133,19 @@ void global::handleKeyPresses() {
                 renderHitboxes = !renderHitboxes;
             } else {
                 Position<float> coord(window.screen.x + rand() % window.screen.w, window.screen.y + rand() % window.screen.h);
-                boids.push_back(new Boid(window.renderer, coord, Position<float>(0, 0), findTexture("boids"), 0.2f));
+                Atlas* boidsAtlas = dynamic_cast<Atlas*>(findTexture("boids"));
+                boids.push_back(new Boid(window.renderer, coord, Position<float>(10, 0), boidsAtlas, 0.2f));
             }
+            break;
+        }
+
+        case SDL_SCANCODE_E: {
+            generateChunk(std::pair(0, 0));
+            break;
+        }
+
+        case SDL_SCANCODE_R: {
+            unloadChunk(std::pair(0, 0));
             break;
         }
 
@@ -150,21 +227,14 @@ void global::updateScene() {
 
     if (boids.empty()) return;
 
-    Position<float> meanPos;
-    Position<float> meanSpeed;
+
+    world.dt = (float) (clock() - t) / CLOCKS_PER_SEC;
 
     for(Boid* b : boids) {
-        meanPos += b->getCenter();
-        meanSpeed += b->getSpeed();
-    }
-
-    meanPos = meanPos / boids.size();
-    meanSpeed = meanSpeed / boids.size();
-
-    for(Boid* b : boids) {
-        std::vector<Boid*> closeBoids = b->findCloseBoids(boids, world.closeLimit);
-        auto closeObstacles = b->findCloseObstacles(stationaryObjects, world.closeLimit);
-        b->updateSpeed(meanPos, meanSpeed, closeBoids, closeObstacles, world);
+        std::vector<Boid*> closeBoids = b->findCloseBoids(boids, world.closeBoidsLimit);
+        auto closeObstacles = b->findCloseObstacles(stationaryObjects, world.closeObstaclesLimit);
+        b->updateSpeed(closeBoids, closeObstacles, world);
+        b->updateRotation(closeObstacles, world);
         b->updatePosition(world.dt);
     }
 

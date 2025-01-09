@@ -74,13 +74,24 @@ struct Position {
         return Position(i / a, j / a);
     }
 
+    inline void operator/=(T a) {
+        i /= a; j /= a;
+    }
+
     Position<T> normalize() const {
         return (*this) / norm();
     }
 
+    //angle must be in degrees
+    inline void rotate(float angle) {
+        float rad = M_PIf * angle / 180.0f;
+        i = (i*std::cos(rad) - j*std::sin(rad));
+        j = (i*std::sin(rad) + j*std::cos(rad));
+    }
+
 
     inline T operator*(Position<T> const& other) const {
-        return i * other.i + j * other.j;
+        return i * other.i + j * other.j; 
     }
 };
 

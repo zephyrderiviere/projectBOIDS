@@ -10,8 +10,8 @@ Window::Window(char const* title, SDL_Rect size) {
     h = size.h;
     w = size.w;
     
-    screen.x = 0;
-    screen.y = 0;
+    screen.x = -size.w / 2;
+    screen.y = -size.h / 2;
     screen.w = w;
     screen.h = h;
     window = NULL;

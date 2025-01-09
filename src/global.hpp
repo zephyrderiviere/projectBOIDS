@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <vector>
+#include <list>
 #include "Window.hpp"
 #include "objects/Objects.hpp"
 #include "utils/ErrorHandling.hpp"
@@ -9,7 +10,7 @@
 
 
 static char const* file_cloud1 = "data/cloud1.bmp";
-static char const* file_WhiteBoid = "data/WhiteBoid.bmp";
+static char const* file_WhiteBoid = "data/boids.bmp";
 
 static char const* file_fpsFont = "data/Movistar.ttf";
 
@@ -44,6 +45,7 @@ class global {
         Boid* following;
 
         void loadTextures();
+        void makeWorldBorder(float const size);
 
 
 
@@ -56,12 +58,20 @@ class global {
         void handleMouseMotion();
         void handleWindowEvents();
 
+
+        bool notInNeighbourHood(Position<float> const& point, std::list<Position<float>> const& samplePoints, unsigned cellSize) const;
+        void generateChunk(std::pair<int, int> const& chunk);
+        void unloadChunk(std::pair<int, int> const& chunk);
+
         void renderDebug();
         void renderBBoxes();
 
     public:
-        global(char const* title, SDL_Rect size = {100, 100, 1200, 800}, const char* fpsFontfile = file_fpsFont, unsigned fpsFontSize = 25) 
-            : window(title, size), stationaryObjects(), boids() {
+        global(char const* title, SDL_Rect size = {100, 100, 1200, 800}, const char* fpsFontfile = file_fpsFont, unsigned fpsFontSize = 25) : 
+               window(title, size), world(), stationaryObjects(), boids() {
+
+            world.size = 10000;
+
 
             loadTextures();
 
@@ -74,16 +84,18 @@ class global {
             renderHitboxes = true;
             isRunning = true;
             isMouseButtonPressed = false;
-            debugFont = TTF_OpenFont(fpsFontfile, fpsFontSize);
             debugFontSize = fpsFontSize;
+            debugFont = TTF_OpenFont(fpsFontfile, fpsFontSize);
+
+            if (debugFont == NULL) {
+                throw exception(LOADING_TEXT_ERROR);
+            }
 
             pause = false;
             freeCam = true;
             following = NULL;
 
-            if (debugFont == NULL) {
-                throw exception(LOADING_TEXT_ERROR);
-            }
+            makeWorldBorder(world.size);
         }
         ~global();
 

@@ -17,5 +17,3 @@ template<typename T>
 bool Position<T>::operator>(Position const& other) const {
     return i > other.i || (i == other.i && j > other.j);
 }
-
-
