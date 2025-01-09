@@ -70,17 +70,20 @@ bool global::notInNeighbourHood(Position<float> const& point, std::list<Position
 
 //Generates a chunk (by default a 1000x1000 zone) using the Poisson Disk Sampling method
 void global::generateChunk(std::pair<int, int> const& chunk) {   
+    randomGenerator tea (chunk);
+
     unsigned const cellSize = CHUNK_SIZE / 10;
     std::queue<Position<float>> toProcess;
     std::list<Position<float>> samplePoints;
-    Position<float> p (CHUNK_SIZE * chunk.first + rand() % CHUNK_SIZE, CHUNK_SIZE * chunk.second + rand() % CHUNK_SIZE);
+    Position<float> p (tea.randomFloat(CHUNK_SIZE * chunk.first, CHUNK_SIZE * (chunk.first + 1)), 
+                       tea.randomFloat(CHUNK_SIZE * chunk.second, CHUNK_SIZE * (chunk.second + 1)));
     toProcess.push(p); samplePoints.push_back(p);
 
     while(!toProcess.empty()) {
         Position<float> point = toProcess.front();
         toProcess.pop();
         for(int i=0; i<world.chunkGen_NewPoints; i++) {
-            Position<float> rand = point + randomDiskSampling(world.chunkGen_MinDist, 2.0f * world.chunkGen_MinDist);
+            Position<float> rand = point + tea.randomDiskSampling(world.chunkGen_MinDist, 2.0f * world.chunkGen_MinDist);
 
             if (rand.inRectangle(CHUNK_SIZE * chunk.first, CHUNK_SIZE * (chunk.first + 1), CHUNK_SIZE * chunk.second, CHUNK_SIZE * (chunk.second + 1))
                 && notInNeighbourHood(rand, samplePoints, cellSize)) {
@@ -92,7 +95,7 @@ void global::generateChunk(std::pair<int, int> const& chunk) {
     }
 
     for(Position<float>& p : samplePoints) {
-        stationaryObjects.push_back(new Obstacle(window.renderer, p, findTexture("cloud1"), randomFloat(0, 360.0f), 0.1f));
+        stationaryObjects.push_back(new Obstacle(window.renderer, p, findTexture("cloud1"), tea.randomFloat(0, 360.0f), 0.1f));
     }
 }
 
