@@ -10,7 +10,7 @@ inline bool inBounds(T x, T min, T max) {
     return min <= x && x <= max;
 }
 
-
+/*Basically a vec2 class but adaptable for int*/
 template <typename T>
 struct Position {
     T i, j;

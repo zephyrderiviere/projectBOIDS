@@ -3,6 +3,7 @@
 
 #include "Position.hpp"
 #include <climits>
+#include <cmath>
 #include <cstdlib>
 
 /*
@@ -18,11 +19,11 @@ struct randomGenerator {
 
     public:
 
-    randomGenerator(std::pair<int, int> seed) {
+    randomGenerator(std::pair<int, int> seed, unsigned n) {
         int p = (seed.first < 0) ? (-2 * seed.first) + 1 : 2*seed.first;
         int q = (seed.second < 0) ? (-2 * seed.second) + 1 : 2*seed.second;
 
-        value = (p+q) * (p+q+1) / 2;
+        value = ((p+q) * (p+q+1) / 2) + n;
     }
 
     

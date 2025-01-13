@@ -49,5 +49,4 @@ class exception : public std::exception {
 };
 
 
-
 #endif //ERRORHANDLING

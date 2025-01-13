@@ -92,6 +92,9 @@ std::vector<Boid*> Boid::findCloseBoids(std::vector<Boid*> const& boids, float c
 void Boid::updatePosition(float const dt) {
     bbox.x += dt * speed.i; 
     bbox.y += dt * speed.j;
+    chunk.first = (int) (bbox.x) / CHUNK_SIZE;
+    chunk.second = (int) (bbox.y) / CHUNK_SIZE;
+
 }
 
 

@@ -31,6 +31,7 @@ class global {
 
         std::vector<Object*> stationaryObjects;
         std::vector<Boid*> boids;
+        std::list<std::pair<int, int>> loadedChunks;
 
         WorldSettings world;
 
@@ -60,18 +61,20 @@ class global {
 
 
         bool notInNeighbourHood(Position<float> const& point, std::list<Position<float>> const& samplePoints, unsigned cellSize) const;
+
+        void generateWorldBorder(std::pair<int, int> const& chunk);
         void generateChunk(std::pair<int, int> const& chunk);
         void unloadChunk(std::pair<int, int> const& chunk);
 
-        void renderDebug();
+        void updateLoadedChunks();
+        void renderDebug(clock_t t2);
         void renderBBoxes();
 
     public:
         global(char const* title, SDL_Rect size = {100, 100, 1200, 800}, const char* fpsFontfile = file_fpsFont, unsigned fpsFontSize = 25) : 
                window(title, size), world(), stationaryObjects(), boids() {
 
-            world.size = 10000;
-
+            world.size = 100000;
 
             loadTextures();
 
@@ -94,8 +97,6 @@ class global {
             pause = false;
             freeCam = true;
             following = NULL;
-
-            makeWorldBorder(world.size);
         }
         ~global();
 
