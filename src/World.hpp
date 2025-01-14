@@ -28,15 +28,15 @@ struct WorldSettings {
     unsigned const chunkGen_NewPoints;
     unsigned const chunkGen_MinDist;
 
-    WorldSettings(float const alpha = 0.1f, float maxSpeed = 200.0f, float rotation = 1.0f, 
-                  float closeBoidsLimit = 50.0f, float closeBoidsSeparationLimit = 20.0f, float closeObstaclesLimit = 100.0f, float inFrontCloseObstaclesLimit = 500.0f,
+    WorldSettings(float const alpha = 0.1f, float minSpeed = 50.0f, float maxSpeed = 200.0f, float rotation = 1.0f, 
+                  float closeBoidsLimit = 200.0f, float closeBoidsSeparationLimit = 20.0f, float closeObstaclesLimit = 100.0f, float inFrontCloseObstaclesLimit = 500.0f,
                   unsigned s = 10000, unsigned seed = 0, unsigned renderDistance = 5) : 
 
-        alpha(alpha), maxSpeed(maxSpeed), rotSpeed(rotation), 
+        alpha(alpha), minSpeed(minSpeed), maxSpeed(maxSpeed), rotSpeed(rotation), 
         closeBoidsLimit(closeBoidsLimit), closeBoidsSeparationLimit(closeBoidsSeparationLimit), closeObstaclesLimit(closeObstaclesLimit), inFrontCloseObstaclesLimit(inFrontCloseObstaclesLimit),
         size(s), seed(seed), renderDistance(renderDistance),
         chunkGen_NewPoints(30),
-        chunkGen_MinDist(250)
+        chunkGen_MinDist(300)
         {}
 };
 

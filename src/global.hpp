@@ -47,6 +47,7 @@ class global {
 
         void loadTextures();
         void makeWorldBorder(float const size);
+        void loadConfiguration(unsigned config);
 
 
 
@@ -71,7 +72,7 @@ class global {
         void renderBBoxes();
 
     public:
-        global(char const* title, SDL_Rect size = {100, 100, 1200, 800}, const char* fpsFontfile = file_fpsFont, unsigned fpsFontSize = 25) : 
+        global(char const* title, unsigned configuration, SDL_Rect size = {100, 100, 1200, 800}, const char* fpsFontfile = file_fpsFont, unsigned fpsFontSize = 25) : 
                window(title, size), world(), stationaryObjects(), boids() {
 
             world.size = 100000;
@@ -97,6 +98,8 @@ class global {
             pause = false;
             freeCam = true;
             following = NULL;
+
+            loadConfiguration(configuration);
         }
         ~global();
 

@@ -125,7 +125,7 @@ void Atlas::renderSubTexture(Position<int> const& sub, Position<float> const& p,
     }
 
     SDL_Rect src = {sub.i * sub_w, sub.j * sub_h, sub_w, sub_h};
-    SDL_FRect dest = {p.i, p.j, objectScale * scale_w * dimensions.w, objectScale * scale_h * dimensions.h};
+    SDL_FRect dest = {p.i, p.j, objectScale * scale_w * dimensions.w / n, objectScale * scale_h * dimensions.h / m};
     float angle = getRenderAngle(orientation);
     if (SDL_RenderCopyExF(renderer, texture, &src, &dest, angle, NULL, SDL_FLIP_NONE) != 0) {
         throw exception(ATLAS_RENDER_ERROR);

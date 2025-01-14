@@ -7,7 +7,12 @@
 
 
 
-int main() {
+int main(int argc, char** argv) {
+
+    unsigned configuration = 0;
+    if (argc > 1) {
+        configuration = atoi(argv[1]);
+    } 
 
     srand(time(NULL));
     global* g = NULL;
@@ -18,7 +23,7 @@ int main() {
             throw exception(INIT_ERROR);
         }
 
-        g = new global("Project BOIDS");
+        g = new global("Project BOIDS", configuration);
         g->mainLoop();
     } catch (exception e) {
         delete g;

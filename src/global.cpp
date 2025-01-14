@@ -4,19 +4,22 @@
 #include "utils/Position.hpp"
 #include "utils/colors.hpp"
 #include "utils/random.hpp"
+#include <SDL2/SDL_events.h>
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
 #include <queue>
-#include <vector>
 
+
+
+/*************************************LOADING****************************************/
 
 void global::loadTextures() {
     /*Cloud Texture*/
     textures.push_back(std::pair("cloud1", new Texture(window.renderer, file_cloud1)));
 
     /*Boid texture Atlas TODO*/
-    textures.push_back(std::pair("boids", new Atlas(window.renderer, file_WhiteBoid, 1, 1)));
+    textures.push_back(std::pair("boids", new Atlas(window.renderer, file_WhiteBoid, 5, 1)));
 }
 
 
@@ -40,6 +43,21 @@ Texture* global::findTexture(std::string const& name) {
     }
 
     return NULL;
+}
+
+void global::loadConfiguration(unsigned config) {
+    switch(config) {
+        case 0: {
+            
+            break;
+        }
+
+        case 1: {
+            break;
+        }
+
+        default: break;
+    }
 }
 
 global::~global() {
@@ -240,6 +258,20 @@ void global::handleKeyPresses() {
             break;
         }
 
+        case SDL_SCANCODE_N: {
+            Position<float> coord(window.screen.x + rand() % window.screen.w, window.screen.y + rand() % window.screen.h);
+            Atlas* boidsAtlas = dynamic_cast<Atlas*>(findTexture("boids"));
+            boids.push_back(new LoneBoid(window.renderer, coord, Position<float>(10, 0), boidsAtlas, 0.2f));
+            break;
+        }
+
+        case SDL_SCANCODE_A: {
+            Position<float> coord(window.screen.x + rand() % window.screen.w, window.screen.y + rand() % window.screen.h);
+            Atlas* boidsAtlas = dynamic_cast<Atlas*>(findTexture("boids"));
+            boids.push_back(new SociableBoid(window.renderer, coord, Position<float>(10, 0), boidsAtlas, 0.2f));
+            break;
+        }
+
         case SDL_SCANCODE_F: {
             freeCam = true;
             following = NULL;
@@ -311,6 +343,11 @@ void global::handleMouseMotion() {
     }
 }
 
+void global::handleWindowEvents() {
+    switch (e.window.type) {
+        
+    }
+} 
 /***************************************RENDERING****************************************/
 
 void global::updateScene() {
@@ -463,6 +500,10 @@ void global::mainLoop() {
 
                 case SDL_MOUSEMOTION:
                     handleMouseMotion();
+                    break;
+
+                case SDL_WINDOWEVENT:
+                    handleWindowEvents();
                     break;
 
             }

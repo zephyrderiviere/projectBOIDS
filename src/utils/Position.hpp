@@ -89,6 +89,13 @@ struct Position {
         j = (i*std::sin(rad) + j*std::cos(rad));
     }
 
+    inline Position<float> rotateTo(float angle) const {
+        float rad = M_PIf * angle / 180.0f;
+        float ii = (i*std::cos(rad) - j*std::sin(rad));
+        float jj = (i*std::sin(rad) + j*std::cos(rad));
+        return Position<float>(ii, jj);
+    }
+
 
     inline T operator*(Position<T> const& other) const {
         return i * other.i + j * other.j; 

@@ -10,27 +10,25 @@ class Boid : public Object {
         Atlas* t;
         Position<int> subTexture;
         Position<float> speed;
-        int rotationDirection;
 
         Position<float> cohesion;
         Position<float> separation;
         Position<float> alignment;
 
 
-        bool straightLineIntersect(SDL_FRect const& rect) const;
+        bool straightLineIntersect(SDL_FRect const& rect, float angle) const;
 
         void calculateForces(std::vector<Boid*> const& closeBoids, std::vector<std::pair<Object*, float>> const& closeObstacles, WorldSettings const&);
-        void limitSpeed(WorldSettings const&);
+        void clampSpeed(WorldSettings const&);
 
     public:
 
         Boid(SDL_Renderer* renderer, Position<float> const& p, Position<float> const& initSpeed, Atlas* texture, float scale = 1) : 
                 Object(renderer, p, scale), t(texture), speed(initSpeed) {
         
-            bbox.w = t->dimensions.w * scale;
-            bbox.h = t->dimensions.h * scale;
+            bbox.w = (t->dimensions.w * scale) / texture->n;
+            bbox.h = (t->dimensions.h * scale) / texture->m;
             subTexture = Position<int>(0, 0);
-            rotationDirection = ((rand() % 2) == 0) ? -1 : 1;
         }
         
         inline Position<float> getSpeed() const {
@@ -57,9 +55,28 @@ class LoneBoid : public Boid {
 
     public:
 
-        void updateSpeed(std::vector<Boid*> const& closeBoids, std::vector<std::pair<Object*, float>> const& closeObstacles, WorldSettings const&);
+        LoneBoid(SDL_Renderer* renderer, Position<float> const& p, Position<float> const& initSpeed, Atlas* texture, float scale = 1) : 
+                Boid(renderer, p, initSpeed, texture, scale) {
+            subTexture = Position<int>(1, 0);
+        }
+
+        virtual void updateSpeed(std::vector<Boid*> const& closeBoids, std::vector<std::pair<Object*, float>> const& closeObstacles, WorldSettings const&) override;
 };
 
+class SociableBoid : public Boid {
+    private:
+        static float constexpr cohesionFactor = 5.0f;
+        static float constexpr separationFactor = 1.0f;
+        static float constexpr alignmentFactor = 1.0f;
 
+    public:
+
+        SociableBoid(SDL_Renderer* renderer, Position<float> const& p, Position<float> const& initSpeed, Atlas* texture, float scale = 1) : 
+                Boid(renderer, p, initSpeed, texture, scale) {
+            subTexture = Position<int>(2, 0);
+        }
+
+        virtual void updateSpeed(std::vector<Boid*> const& closeBoids, std::vector<std::pair<Object*, float>> const& closeObstacles, WorldSettings const&) override;
+};
 
 #endif //BOID

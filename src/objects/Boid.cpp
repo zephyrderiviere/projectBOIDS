@@ -4,11 +4,10 @@
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
 #include <algorithm>
-#include <vector>
 
 
 /*
-    Returns the minimum distance between two rectangle points
+    Returns the minimum distance between two rectangle
 */
 float minDistance(SDL_FRect const* r1, SDL_FRect const* r2) {
     bool left = (r2->x + r2->w) < r1->x;
@@ -39,7 +38,7 @@ float minDistance(SDL_FRect const* r1, SDL_FRect const* r2) {
 
 
 void Boid::render(Position<float> const offset, float scale_w, float scale_h) const {
-    t->render(Position<float>(scale_w * (bbox.x - offset.i), scale_h * (bbox.y - offset.j)), speed.normalize(), scale, scale_w, scale_h);
+    t->renderSubTexture(subTexture, Position<float>(scale_w * (bbox.x - offset.i), scale_h * (bbox.y - offset.j)), speed.normalize(), scale, scale_w, scale_h);
 }
 
 void Boid::renderAccelerations(Position<float> const offset, float scale_w, float scale_h) const {
@@ -98,28 +97,29 @@ void Boid::updatePosition(float const dt) {
 }
 
 
-bool Boid::straightLineIntersect(SDL_FRect const& rect) const {
-    if (std::abs(speed.i) >= 1e-6) {
+bool Boid::straightLineIntersect(SDL_FRect const& rect, float angle) const {
+    Position<float> vec = speed.rotateTo(angle);
+    if (std::abs(vec.i) >= 1e-6) {
         //We check for intersection with vertical sides
 
-        float t = (rect.x - getCenter().i) / speed.i;
-        float y = (getCenter() + speed * t).j;
+        float t = (rect.x - getCenter().i) / vec.i;
+        float y = (getCenter() + vec * t).j;
         if (rect.y < y && y < rect.y + rect.h) return true;
         
-        t = (rect.x + rect.w - getCenter().i) / speed.i;
-        y = (getCenter() + speed * t).j;
+        t = (rect.x + rect.w - getCenter().i) / vec.i;
+        y = (getCenter() + vec * t).j;
 
         if (rect.y < y && y < rect.y + rect.h) return true;
     }
-    if (std::abs(speed.j) >= 1e-6) {
+    if (std::abs(vec.j) >= 1e-6) {
         //We check for intersection with horizontal sides
         
-        float t = (rect.y - getCenter().j) / speed.j;
-        float x = (getCenter() + speed * t).i;
+        float t = (rect.y - getCenter().j) / vec.j;
+        float x = (getCenter() + vec * t).i;
         if (rect.x < x && x < rect.x + rect.w) return true;
 
-        t = (rect.y + rect.h - getCenter().j) / speed.j;
-        x = (getCenter() + speed * t).i;
+        t = (rect.y + rect.h - getCenter().j) / vec.j;
+        x = (getCenter() + vec * t).i;
         if (rect.x < x && x < rect.x + rect.w) return true;
     }
 
@@ -129,9 +129,11 @@ bool Boid::straightLineIntersect(SDL_FRect const& rect) const {
 
 void Boid::updateRotation(std::vector<std::pair<Object*, float>> const& closeObstacles, WorldSettings const& world) {
     for(std::pair o : closeObstacles) {
-        if(straightLineIntersect(o.first->bbox)) {
-            speed.rotate(rotationDirection * world.rotSpeed);
-            return;
+        for(float angle = -15.0f; angle < 16.0f; angle += 5.0f) {
+            if(straightLineIntersect(o.first->bbox, angle)) {
+                speed.rotate((angle > 0 ? -1 : 1) * world.rotSpeed);
+                return;
+            }
         }
     }
 }
@@ -183,8 +185,13 @@ void Boid::calculateForces(std::vector<Boid*> const& closeBoids, std::vector<std
     }
 }
 
-void Boid::limitSpeed(WorldSettings const& world) {
+void Boid::clampSpeed(WorldSettings const& world) {
     float const norm = speed.norm();
+
+    if (norm < world.minSpeed) {
+        speed *= (world.minSpeed / norm);
+    }
+
     if (norm > world.maxSpeed) {
         speed *= (world.maxSpeed / norm);
     }
@@ -197,7 +204,7 @@ void Boid::updateSpeed(std::vector<Boid*> const& closeBoids, std::vector<std::pa
 
     speed += world.dt * acceleration;
 
-    limitSpeed(world);
+    clampSpeed(world);
 }
 
 
@@ -212,5 +219,19 @@ void LoneBoid::updateSpeed(std::vector<Boid*> const& closeBoids, std::vector<std
 
     speed += world.dt * acceleration;
 
-    limitSpeed(world);
+    clampSpeed(world);
+}
+
+
+void SociableBoid::updateSpeed(std::vector<Boid*> const& closeBoids, std::vector<std::pair<Object*, float>> const& closeObstacles, WorldSettings const& world) {
+    calculateForces(closeBoids, closeObstacles, world);
+    cohesion *= cohesionFactor;
+    separation *= separationFactor;
+    alignment *= alignmentFactor;
+
+    Position<float> acceleration = - world.alpha * speed + (cohesion + separation + alignment);
+
+    speed += world.dt * acceleration;
+
+    clampSpeed(world);
 }
