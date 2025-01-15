@@ -14,7 +14,7 @@ static char* getMessageFromErrorCode(ErrorCode error) {
         case SURFACE_CREATION_ERROR :               return (char*)"Error during creation of a Surface";
         case FONT_CREATION_ERROR :                  return (char*)"Error during creation of a Font";
         
-        
+        case SET_WINDOW_FULLSCREEN_ERROR:           return (char*)"Error during the flip of fullscreen mode";
 
         case LOADING_TEXTURE_FILE_ERROR:            return (char*)"Error with the loading of a texture file";
         case LOADING_TEXT_ERROR:                    return (char*)"Error with the loading of a ttf file";

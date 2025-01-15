@@ -2,11 +2,12 @@
 #include "utils/ErrorHandling.hpp"
 #include "utils/Position.hpp"
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_stdinc.h>
 
 
 
 
-Window::Window(char const* title, SDL_Rect size) {
+Window::Window(char const* title, SDL_Rect size, Uint32 windowFlags) {
     h = size.h;
     w = size.w;
     
@@ -16,9 +17,10 @@ Window::Window(char const* title, SDL_Rect size) {
     screen.h = h;
     window = NULL;
     renderer = NULL;
+    isFullScreen = false;
 
 
-    window = SDL_CreateWindow(title, size.x, size.y, size.w, size.h, SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow(title, size.x, size.y, size.w, size.h, windowFlags);
 
     if (window == NULL) {
         throw exception(WINDOW_CREATION_ERROR);

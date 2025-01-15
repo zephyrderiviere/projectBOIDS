@@ -1,10 +1,5 @@
 #include "global.hpp"
-#include "Texture.hpp"
-#include "World.hpp"
-#include "utils/Position.hpp"
-#include "utils/colors.hpp"
 #include "utils/random.hpp"
-#include <SDL2/SDL_events.h>
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
@@ -20,21 +15,6 @@ void global::loadTextures() {
 
     /*Boid texture Atlas TODO*/
     textures.push_back(std::pair("boids", new Atlas(window.renderer, file_WhiteBoid, 5, 1)));
-}
-
-
-void global::makeWorldBorder(float const size) {
-    for(int x=-size; x<=size; x += 10) {
-        if (std::abs(x) == size) {
-            for(int y=-size; y<size; y+=10) {
-                stationaryObjects.push_back(new Rectangle(window.renderer, {(float) x, (float) y, 1, 10}, blueviolet));
-            }
-        }
-        if (x != size) {
-            stationaryObjects.push_back(new Rectangle(window.renderer, {(float) x, -size, 10, 1}, blueviolet));
-            stationaryObjects.push_back(new Rectangle(window.renderer, {(float) x, +size, 10, 1}, blueviolet));
-        }
-    }
 }
 
 Texture* global::findTexture(std::string const& name) {
@@ -251,7 +231,7 @@ void global::handleKeyPresses() {
             if (isKeyPressed[SDL_SCANCODE_F3]) {
                 renderHitboxes = !renderHitboxes;
             } else {
-                Position<float> coord(window.screen.x + rand() % window.screen.w, window.screen.y + rand() % window.screen.h);
+                Position<float> coord(std::clamp(window.screen.x + rand() % window.screen.w, -world.size, world.size), std::clamp(window.screen.y + rand() % window.screen.h, -world.size, world.size));
                 Atlas* boidsAtlas = dynamic_cast<Atlas*>(findTexture("boids"));
                 boids.push_back(new Boid(window.renderer, coord, Position<float>(10, 0), boidsAtlas, 0.2f));
             }
@@ -259,14 +239,14 @@ void global::handleKeyPresses() {
         }
 
         case SDL_SCANCODE_N: {
-            Position<float> coord(window.screen.x + rand() % window.screen.w, window.screen.y + rand() % window.screen.h);
+            Position<float> coord(std::clamp(window.screen.x + rand() % window.screen.w, -world.size, world.size), std::clamp(window.screen.y + rand() % window.screen.h, -world.size, world.size));
             Atlas* boidsAtlas = dynamic_cast<Atlas*>(findTexture("boids"));
             boids.push_back(new LoneBoid(window.renderer, coord, Position<float>(10, 0), boidsAtlas, 0.2f));
             break;
         }
 
         case SDL_SCANCODE_A: {
-            Position<float> coord(window.screen.x + rand() % window.screen.w, window.screen.y + rand() % window.screen.h);
+            Position<float> coord(std::clamp(window.screen.x + rand() % window.screen.w, -world.size, world.size), std::clamp(window.screen.y + rand() % window.screen.h, -world.size, world.size));
             Atlas* boidsAtlas = dynamic_cast<Atlas*>(findTexture("boids"));
             boids.push_back(new SociableBoid(window.renderer, coord, Position<float>(10, 0), boidsAtlas, 0.2f));
             break;
@@ -280,6 +260,30 @@ void global::handleKeyPresses() {
 
         case SDL_SCANCODE_F3: {
             isDebug = !isDebug;
+            break;
+        }
+
+        case SDL_SCANCODE_F11: {
+            int old_w = window.w, old_h = window.h;
+            if (window.isFullScreen) {
+                SDL_SetWindowFullscreen(window.window, 0);
+
+                SDL_DisplayMode dm;
+                if (SDL_GetDesktopDisplayMode(0, &dm) != 0) {
+                    throw exception(SET_WINDOW_FULLSCREEN_ERROR);
+                }
+                window.w = dm.w; window.h = dm.h;
+
+            } else {
+                if (SDL_SetWindowFullscreen(window.window, SDL_WINDOW_FULLSCREEN) ||
+                    SDL_GetRendererOutputSize(window.renderer, &window.w, &window.h)) {
+                        
+                    throw exception(SET_WINDOW_FULLSCREEN_ERROR);
+                }
+            }
+            window.screen.w = window.screen.w * ((double) window.w / old_w);
+            window.screen.h = window.screen.h * ((double) window.h / old_h);
+            window.isFullScreen = !window.isFullScreen;
             break;
         }
 
@@ -344,20 +348,43 @@ void global::handleMouseMotion() {
 }
 
 void global::handleWindowEvents() {
-    switch (e.window.type) {
-        
+    switch (e.window.event) {
+
+        case SDL_WINDOWEVENT_MAXIMIZED: {
+            int old_w = window.w, old_h = window.h;
+            SDL_GetRendererOutputSize(window.renderer, &window.w, &window.h);
+
+            window.screen.w = window.screen.w * ((double) window.w / old_w);
+            window.screen.h = window.screen.h * ((double) window.h / old_h);
+            break;
+        }
+        case SDL_WINDOWEVENT_RESIZED: {
+            int old_w = window.w, old_h = window.h;
+            window.w = e.window.data1; window.h = e.window.data2;
+            window.screen.w = window.screen.w * ((double) window.w / old_w);
+            window.screen.h = window.screen.h * ((double) window.h / old_h);
+            break;
+        }
+
+        default: break;
     }
 } 
 /***************************************RENDERING****************************************/
+
+void global::limitFPS(clock_t t2) {
+    int const renderTimeMilliSecond = ((t2 - t) / (CLOCKS_PER_SEC / 1000));
+    if (renderTimeMilliSecond < FPSMILLISECONDLIMIT) {
+        //printf("%d\n", FPSMILLISECONDLIMIT - renderTimeMilliSecond);
+        SDL_Delay(FPSMILLISECONDLIMIT - renderTimeMilliSecond);
+        t -= 1000 * (FPSMILLISECONDLIMIT - renderTimeMilliSecond);
+    }
+}
 
 void global::updateScene() {
     Position<float> const offset (window.screen.x, window.screen.y);
     float scale_w = (float) window.w / window.screen.w, scale_h = (float) window.h / window.screen.h;
 
     if (boids.empty()) return;
-
-
-    world.dt = (float) (clock() - t) / CLOCKS_PER_SEC;
 
     for(Boid* b : boids) {
         std::vector<Boid*> closeBoids = b->findCloseBoids(boids, world.closeBoidsLimit);
@@ -369,11 +396,9 @@ void global::updateScene() {
 }
 
 
-void global::renderDebug(clock_t t2) {
-    
-
+void global::renderDebug(clock_t t2) const {
     double renderTime = (double) (t2 - t) / CLOCKS_PER_SEC;
-    double fps = 1 / renderTime;
+    double fps = 1.0f / renderTime;
     char s[100];
     sprintf(s, "FPS : %lf", fps);
 
@@ -402,7 +427,7 @@ void global::renderDebug(clock_t t2) {
     mouseText.render(Position<int>(0, 4 * debugFontSize));
 }
 
-void global::renderBBoxes() {
+void global::renderBBoxes() const {
     SetColor(window.renderer, red);
     Position<float> const offset (window.screen.x, window.screen.y);
     float scale_w = (float) window.w / window.screen.w, scale_h = (float) window.h / window.screen.h;
@@ -427,11 +452,13 @@ void global::renderBBoxes() {
 
 void global::render() {
 
+    //Update the camera position if it is following a Boid
     if (!freeCam) {
         window.screen.x = following->bbox.x + (following->bbox.w - window.screen.w) / 2;
         window.screen.y = following->bbox.y + (following->bbox.h - window.screen.h) / 2;
     }
 
+    //Render the skyBlue background
     window.setDrawColor(skyBlue);
     SDL_RenderClear(window.renderer);
     SDL_SetRenderDrawBlendMode(window.renderer, SDL_BLENDMODE_BLEND);
@@ -439,20 +466,22 @@ void global::render() {
     Position<float> const offset (window.screen.x, window.screen.y);
     float scale_w = (float) window.w / window.screen.w, scale_h = (float) window.h / window.screen.h;
 
+    //Screen window to check if we need to render some objects or not
     SDL_FRect screen = {(float) window.screen.x, (float) window.screen.y, (float) window.screen.w, (float) window.screen.h};
 
+    //Rendering of objects if and only if they can be seen on screen
     for(Object* o : stationaryObjects) {
         if (SDL_HasIntersectionF(&o->bbox, &screen)) {
             o->render(offset, scale_w, scale_h);   
         }
     }
-
     for(Boid* b : boids) {
         if (SDL_HasIntersectionF(&b->bbox, &screen)) {
             b->render(offset, scale_w, scale_h);
         }
     }
 
+    //Optional rendering of the objects hitboxes, as well as the vectors for the Boids
     if (renderHitboxes) {
         renderBBoxes();
         for(Boid* b : boids) {
@@ -461,20 +490,27 @@ void global::render() {
             }
         }
     }
-    
-    clock_t t2 = clock();
+
+
+    clock_t t2 = clock();  
+    limitFPS(t2); 
+    //Optional rendering of the debug menu
     if (isDebug) {
         renderDebug(t2);
     }
-    t = t2;
+
+    //Update the time elapsed according to the rendering time
+    world.dt = (double) (t2 - t) / CLOCKS_PER_SEC;
 
     SDL_SetRenderDrawBlendMode(window.renderer, SDL_BLENDMODE_NONE);
     SDL_RenderPresent(window.renderer);
+    t = clock();
 }
 
 
 void global::mainLoop() {
     t = clock();
+    world.dt = 0.0f;
     while(isRunning) {
         while(SDL_PollEvent(&e)) {
             switch(e.type) {

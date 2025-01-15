@@ -1,5 +1,4 @@
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
 #include <vector>
 #include <list>
 #include "Window.hpp"
@@ -15,6 +14,7 @@ static char const* file_WhiteBoid = "data/boids.bmp";
 static char const* file_fpsFont = "data/Movistar.ttf";
 
 static unsigned const SCANCODES_NUMBER = 513;
+static int const FPSMILLISECONDLIMIT = 16;          //Render time between 2 frame to have 60 fps
 
 
 class global {
@@ -46,7 +46,6 @@ class global {
         Boid* following;
 
         void loadTextures();
-        void makeWorldBorder(float const size);
         void loadConfiguration(unsigned config);
 
 
@@ -67,15 +66,16 @@ class global {
         void generateChunk(std::pair<int, int> const& chunk);
         void unloadChunk(std::pair<int, int> const& chunk);
 
+        void limitFPS(clock_t t2);
         void updateLoadedChunks();
-        void renderDebug(clock_t t2);
-        void renderBBoxes();
+        void renderDebug(clock_t t2) const;
+        void renderBBoxes() const;
 
     public:
         global(char const* title, unsigned configuration, SDL_Rect size = {100, 100, 1200, 800}, const char* fpsFontfile = file_fpsFont, unsigned fpsFontSize = 25) : 
-               window(title, size), world(), stationaryObjects(), boids() {
+               window(title, size, SDL_WINDOW_RESIZABLE), world(), stationaryObjects(), boids() {
 
-            world.size = 100000;
+            world.size = 2000;
 
             loadTextures();
 

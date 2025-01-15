@@ -6,10 +6,10 @@ SCENE_OBJECTS := src/objects/*.cpp
 
 build: bin/projectBOIDS
 
-bin/projectBOIDS: utils scene_objects main.o
+bin/projectBOIDS: utils scene_objects main.o global.o Window.o Texture.o 
 	g++ *.o -o $@ ${LIBS} ${C_FLAGS}
 
-main.o: global.o Window.o Texture.o src/main.cpp
+main.o: src/main.cpp
 	g++ src/main.cpp -c ${LIBS} ${C_FLAGS} -o $@
 Texture.o: Position.o src/Texture.cpp src/Texture.hpp
 	g++ src/Texture.cpp -c ${LIBS} ${C_FLAGS}
